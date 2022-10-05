@@ -37,7 +37,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
             }
             // $config = ConfigCollector::collect($here);
             $gitignore = [];
-            foreach($config['gitignore'] ?? [] as $ignore) {
+            foreach ($config['gitignore'] ?? [] as $ignore) {
                 $gitignore[$ignore] = true;
             }
             $createModuleDir = sprintf('modules/%s', $config['name']);
@@ -46,7 +46,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
                 '__version' => '0.0.1',
                 '__git' => $config['git'] ?? '-',
                 '__license' => $config['license'] ?? 'MIT',
-                '__author' => $config['author'] ?? [ 'name'=> '', 'email' => '-', 'website' => '-' ],
+                '__author' => $config['author'] ?? ['name' => '', 'email' => '-', 'website' => '-'],
                 '__files' => [
                     $createModuleDir => $config['files']
                 ],
@@ -95,26 +95,66 @@ class ModuleBuilder extends \CliModule\Library\Builder
     static function buildModel($moduleDir, $config)
     {
 
-        $tableName = null;
-        foreach ($config['properties'] as $cfg) {
-            if (is_array($cfg)) {
-                foreach ($cfg as $k => $c) {
-                    if ($k === 'name' && $c === 'table') {
-                        $tableName = $cfg['value'];
-                        break;
-                    }
-                }
-            }
+        // $config['name'] = self::toSnake($config['name']);
+        $config['name'] = self::toCamel($config['name'], true, '_');
+        $config['properties'] = [
+            [
+                'name' => 'table',
+                'prefix' => 'protected static',
+                'value' => self::toSnake( $config['name'] )
+            ],
+            [
+                'name' => 'chains',
+                'prefix' => 'protected static',
+                'value' => [],
+            ],
+            [
+                'name' => 'q',
+                'prefix' => 'protected static',
+                'value' => []
+            ]
+        ];
+        if (!isset($config['extends'])) {
+            $config['extends'] = '\\Mim\\Model';
         }
-        if (!$tableName) {
+        if (!isset($config['methods'])) {
+            $config['methods'] = [];
+        }
+        if (!isset($config['implements'])) {
+            $config['implements'] = [];
+        }
+        if (!isset($config['ns'])) {
+            $config['ns'] = self::toCamel($config['name'], true) . '\\Model';
+        }
 
-            Bash::echo('Model ' . $config['name'] . ' Skipped, no table name detected');
-            return;
+        $start = 1;
+        foreach ($config['fields'] as &$field) {
+            if (!isset($field['index'])) {
+                $field['index'] = (int) ($start . '000');
+            }
+            $start++;
         }
-        BModel::build($moduleDir, $tableName, $config);
+        
+        BModel::build($moduleDir, self::toSnake( $config['name'] ), $config);
     }
     static function buildController($moduleDir, $config)
     {
         BController::build($moduleDir, $config['name'], $config);
+    }
+
+    static function toCamel($string, $capitalizeFirstCharacter = false, $find = '_')
+    {
+
+        $str = str_replace(' ', '', ucwords(str_replace($find, ' ', $string)));
+
+        if (!$capitalizeFirstCharacter) {
+            $str[0] = strtolower($str[0]);
+        }
+
+        return $str;
+    }
+    static function toSnake($input)
+    {
+        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));
     }
 }

@@ -184,29 +184,7 @@ class Generator
                     'model' => [
                         'items' => [
                             [
-                                'name' => 'Gallery',
-                                'dir' => false,
-                                'ns' => 'Module\\Model',
-                                'extends' => '\\Mim\\Model',
-                                'implements' => [],
-                                'methods' => [],
-                                'properties' => [
-                                    [
-                                        'name' => 'table',
-                                        'prefix' => 'protected static',
-                                        'value' => 'gallery'
-                                    ],
-                                    [
-                                        'name' => 'chains',
-                                        'prefix' => 'protected static',
-                                        'value' => [],
-                                    ],
-                                    [
-                                        'name' => 'q',
-                                        'prefix' => 'protected static',
-                                        'value' => []
-                                    ]
-                                ],
+                                'name' => 'gallery_item',
                                 'fields' => [
                                     'id' => [
                                         'type' => 'INTEGER',
@@ -215,7 +193,6 @@ class Generator
                                             'primary_key' => TRUE,
                                             'auto_increment' => TRUE,
                                         ],
-                                        'index' => 1000,
                                         'format' => [
                                             'type' => 'number'
                                         ]
@@ -226,7 +203,6 @@ class Generator
                                             'unsigned' => TRUE,
                                             'null' => FALSE,
                                         ],
-                                        'index' => 2000,
                                         'format' => [
                                             'type' => 'user'
                                         ]
@@ -237,7 +213,6 @@ class Generator
                                             'unsigned' => TRUE,
                                             'null' => FALSE,
                                         ],
-                                        'index' => 2500,
                                         'format' => [
                                             'type' => 'object',
                                             'model' => [
@@ -251,7 +226,6 @@ class Generator
                                     'text' => [
                                         'type' => 'TEXT',
                                         'attrs' => [],
-                                        'index' => 3000,
                                         'format' => [
                                             'type' => 'text'
                                         ]
@@ -263,7 +237,6 @@ class Generator
                                             'null' => TRUE,
                                             'unique' => TRUE,
                                         ],
-                                        'index' => 4000,
                                         'format' => [
                                             'type' => 'text'
                                         ]
@@ -275,7 +248,6 @@ class Generator
                                             'null' => FALSE,
                                             'default' => 1,
                                         ],
-                                        'index' => 5000,
                                         'format' => [
                                             'type' => 'number'
                                         ]
@@ -288,7 +260,6 @@ class Generator
                                             'null' => FALSE,
                                             'default' => 12.2,
                                         ],
-                                        'index' => 6000,
                                         'format' => [
                                             'type' => 'number'
                                         ]
@@ -300,7 +271,6 @@ class Generator
                                             'null' => FALSE,
                                             'default' => 1,
                                         ],
-                                        'index' => 7000,
                                         'format' => [
                                             'type' => 'number'
                                         ]
@@ -312,7 +282,6 @@ class Generator
                                             'null' => FALSE,
                                             'default' => 1,
                                         ],
-                                        'index' => 8000,
                                         'format' => [
                                             'type' => 'number'
                                         ]
@@ -322,7 +291,6 @@ class Generator
                                         'attrs' => [
                                             'null' => FALSE,
                                         ],
-                                        'index' => 9000,
                                         'format' => [
                                             'type' => 'date'
                                         ]
@@ -332,7 +300,15 @@ class Generator
                                         'attrs' => [
                                             'null' => FALSE,
                                         ],
-                                        'index' => 10000,
+                                        'format' => [
+                                            'type' => 'date'
+                                        ]
+                                    ],
+                                    'created' => [
+                                        'type' => 'TIMESTAMP',
+                                        'attrs' => [
+                                            'default' => 'CURRENT_TIMESTAMP',
+                                        ],
                                         'format' => [
                                             'type' => 'date'
                                         ]
@@ -343,21 +319,11 @@ class Generator
                                             'default' => 'CURRENT_TIMESTAMP',
                                             'update' => 'CURRENT_TIMESTAMP',
                                         ],
-                                        'index' => 11000,
                                         'format' => [
                                             'type' => 'date'
                                         ]
                                     ],
-                                    'created' => [
-                                        'type' => 'TIMESTAMP',
-                                        'attrs' => [
-                                            'default' => 'CURRENT_TIMESTAMP',
-                                        ],
-                                        'index' => 11000,
-                                        'format' => [
-                                            'type' => 'date'
-                                        ]
-                                    ]
+
                                 ]
                             ]
                         ]
