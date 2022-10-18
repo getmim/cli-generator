@@ -2,7 +2,7 @@
 
 return [
     '__name' => 'cli-generator',
-    '__version' => '0.0.4',
+    '__version' => '0.0.5',
     '__git' => 'git@github.com:getmim/cli-generator.git',
     '__license' => 'MIT',
     '__author' => [

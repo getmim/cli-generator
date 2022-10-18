@@ -97,7 +97,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
     {
 
         // $config['name'] = self::toSnake($config['name']);
-        $config['name'] = self::toCamel($moduleName ?? $config['name'], true, '-');
+        $config['name'] = self::toCamel($config['name'], true, '-');
         $config['properties'] = [
             [
                 'name' => 'table',
@@ -125,7 +125,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
             $config['implements'] = [];
         }
         if (!isset($config['ns'])) {
-            $config['ns'] = self::toCamel($config['name'], true, '-') . '\\Model';
+            $config['ns'] = self::toCamel($moduleName ?? $config['name'], true, '-') . '\\Model';
         }
 
         $start = 1;
