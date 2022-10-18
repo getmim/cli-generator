@@ -125,7 +125,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
             $config['implements'] = [];
         }
         if (!isset($config['ns'])) {
-            $config['ns'] = self::toCamel($moduleName ?? $config['name'], true, '-') . '\\Model';
+            $config['ns'] = self::toCamel($moduleName ?? $config['name'], true, '_') . '\\Model';
         }
 
         $start = 1;
