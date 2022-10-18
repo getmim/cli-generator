@@ -286,6 +286,19 @@ class Generator
                                             'type' => 'number'
                                         ]
                                     ],
+                                    'enum' => [
+                                        'type' => 'TINYINT',
+                                        'attrs' => [
+                                            'unsigned' => TRUE,
+                                            'null' => FALSE,
+                                            'default' => 1,
+                                        ],
+                                        'format' => [
+                                            'type' => 'enum',
+                                            'enum' => 'merchant.status',
+                                            'vtype' => 'int'
+                                        ]
+                                    ],
                                     'date' => [
                                         'type' => 'DATE',
                                         'attrs' => [

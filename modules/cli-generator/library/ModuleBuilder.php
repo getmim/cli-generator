@@ -97,7 +97,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
     {
 
         // $config['name'] = self::toSnake($config['name']);
-        $config['name'] = self::toCamel($moduleName ?? $config['name'], true, '_');
+        $config['name'] = self::toCamel($moduleName ?? $config['name'], true, '-');
         $config['properties'] = [
             [
                 'name' => 'table',
