@@ -36,6 +36,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
                 return false;
             }
             // $config = ConfigCollector::collect($here);
+
             $gitignore = [];
             foreach ($config['gitignore'] ?? [] as $ignore) {
                 $gitignore[$ignore] = true;
@@ -48,11 +49,11 @@ class ModuleBuilder extends \CliModule\Library\Builder
                 '__license' => $config['license'] ?? 'MIT',
                 '__author' => $config['author'] ?? ['name' => '', 'email' => '-', 'website' => '-'],
                 '__files' => [
-                    $createModuleDir => $config['files']
+                    $createModuleDir => $config['files'] ?? [ 'install', 'update', 'remove' ]
                 ],
                 '__dependencies' => [
-                    'required' => $config['dependencies']['required'] ?? [],
-                    'optional' => $config['dependencies']['optional'] ?? [],
+                    'required' => $config['dependencies']['required'] ?? [ [ 'required-module' => NULL ] ],
+                    'optional' => $config['dependencies']['optional'] ?? [ [ 'optional-module' => NULL, ] ],
                 ],
                 'autoload' => [
                     'classes' => [],
@@ -84,7 +85,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
 
 
         foreach ($models as $c) {
-            self::buildModel($here, $c);
+            self::buildModel($here, $c, $config['__name']);
         }
         foreach ($controllers as $c) {
             self::buildController($here, $c);
@@ -92,11 +93,11 @@ class ModuleBuilder extends \CliModule\Library\Builder
         return true;
     }
 
-    static function buildModel($moduleDir, $config)
+    static function buildModel($moduleDir, $config, $moduleName = null)
     {
 
         // $config['name'] = self::toSnake($config['name']);
-        $config['name'] = self::toCamel($config['name'], true, '_');
+        $config['name'] = self::toCamel($moduleName ?? $config['name'], true, '_');
         $config['properties'] = [
             [
                 'name' => 'table',
@@ -124,7 +125,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
             $config['implements'] = [];
         }
         if (!isset($config['ns'])) {
-            $config['ns'] = self::toCamel($config['name'], true) . '\\Model';
+            $config['ns'] = self::toCamel($config['name'], true, '-') . '\\Model';
         }
 
         $start = 1;
