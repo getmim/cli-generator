@@ -95,14 +95,13 @@ class ModuleBuilder extends \CliModule\Library\Builder
 
     static function buildModel($moduleDir, $config, $moduleName = null)
     {
-
-        // $config['name'] = self::toSnake($config['name']);
-        $config['name'] = self::toCamel($config['name'], true, '-');
+        $tableName = $config['name'];
+        $config['name'] = to_ns($tableName);
         $config['properties'] = [
             [
                 'name' => 'table',
                 'prefix' => 'protected static',
-                'value' => self::toSnake( $config['name'] )
+                'value' => $tableName
             ],
             [
                 'name' => 'chains',
@@ -125,7 +124,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
             $config['implements'] = [];
         }
         if (!isset($config['ns'])) {
-            $config['ns'] = self::toCamel($moduleName ?? $config['name'], true, '_') . '\\Model';
+            $config['ns'] = to_ns($moduleName) . '\\Model';
         }
 
         $start = 1;
@@ -136,7 +135,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
             $start++;
         }
         
-        BModel::build($moduleDir, self::toSnake( $config['name'] ), $config);
+        BModel::build($moduleDir, $tableName, $config);
     }
     static function buildController($moduleDir, $config)
     {
