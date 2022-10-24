@@ -3,7 +3,7 @@
 /**
  * Module builder
  * @package cli-generator
- * @version 0.0.1
+ * @version 0.0.8
  */
 
 namespace CliGenerator\Library;
@@ -19,8 +19,13 @@ class ModuleBuilder extends \CliModule\Library\Builder
 {
     static function buildExtend(string $here, array $config): bool
     {
-        // make sure the folder is empty
+        if (isset($config['regenerate']) && $config['regenerate'] === true) {
+            if (is_dir($here)) {
+                Fs::rmdir($here);
+            }
+        }
 
+        // make sure the folder is empty
         $models = $config['model']['items'] ?? [];
         $controllers = $config['controller']['items'] ?? [];
         unset($config['controller']);
@@ -49,11 +54,11 @@ class ModuleBuilder extends \CliModule\Library\Builder
                 '__license' => $config['license'] ?? 'MIT',
                 '__author' => $config['author'] ?? ['name' => '', 'email' => '-', 'website' => '-'],
                 '__files' => [
-                    $createModuleDir => $config['files'] ?? [ 'install', 'update', 'remove' ]
+                    $createModuleDir => $config['files'] ?? ['install', 'update', 'remove']
                 ],
                 '__dependencies' => [
-                    'required' => $config['dependencies']['required'] ?? [ [ 'required-module' => NULL ] ],
-                    'optional' => $config['dependencies']['optional'] ?? [ [ 'optional-module' => NULL, ] ],
+                    'required' => $config['dependencies']['required'] ?? [['required-module' => NULL]],
+                    'optional' => $config['dependencies']['optional'] ?? [['optional-module' => NULL,]],
                 ],
                 'autoload' => [
                     'classes' => [],
@@ -77,7 +82,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
 
             Fs::write($mod_conf_file, $tx);
 
-            // now, create readme file 
+            // now, create readme file
             self::readme($here, $config['__name'], $config['__git']);
         }
 
@@ -88,7 +93,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
             self::buildModel($here, $c, $config['__name']);
         }
         foreach ($controllers as $c) {
-            self::buildController($here, $c);
+            self::buildController($here, $c, $config['__name']);
         }
         return true;
     }
@@ -128,33 +133,293 @@ class ModuleBuilder extends \CliModule\Library\Builder
         }
 
         $start = 1;
-        foreach ($config['fields'] as &$field) {
-            if (!isset($field['index'])) {
-                $field['index'] = (int) ($start . '000');
+        foreach ($config['fields'] as $fieldName => &$field) {
+            if (is_string($field)) {
+                if ($fieldName === 'id' && $field === 'id') {
+                    $field = [
+                        'type' => 'INTEGER',
+                        'attrs' => [
+                            'unsigned' => true,
+                            'primary_key' => true,
+                            'auto_increment' => true,
+                        ],
+                        'format' => [
+                            'type' => 'number'
+                        ]
+                    ];
+                    continue;
+                }
+                if ($fieldName === 'user' && $field === 'user') {
+                    $field = [
+                        'type' => 'INTEGER',
+                        'attrs' => [
+                            'unsigned' => true,
+                            'null' => false,
+                        ],
+                        'format' => [
+                            'type' => 'user'
+                        ]
+                    ];
+                    continue;
+                }
+                if (strtolower($field) === 'text') {
+                    $field = [
+                        'type' => 'TEXT',
+                        'attrs' => [],
+                        'format' => [
+                            'type' => 'text'
+                        ]
+                    ];
+                    continue;
+                }
+                if (strtolower($field) === 'varchar') {
+                    $field = [
+                        'type' => 'VARCHAR',
+                        'length' => 100,
+                        'attrs' => [
+                            'null' => true,
+                            'unique' => false
+                        ],
+                        'format' => [
+                            'type' => 'text'
+                        ]
+                    ];
+                    continue;
+                }
+
+                if (strtolower($field) === 'double') {
+                    $field = [
+                        'type' => 'DOUBLE',
+                        'length' => '12,3',
+                        'attrs' => [
+                            'null' => true,
+                            'unsigned' => true,
+                            'default' => 0
+                        ],
+                        'format' => [
+                            'type' => 'number'
+                        ]
+                    ];
+                    continue;
+                }
+
+                if ( str_starts_with($field, "enum:") ) {
+                    $enum = explode('enum:', $field);
+                    $enum = end($enum);
+                    $field = [
+                        'type' => 'TINYINT',
+                        'attrs' => [
+                            'unsigned' => true,
+                            'null' => false,
+                            'default' => 1
+                        ],
+                        'format' => [
+                            'type' => 'enum',
+                            'enum' => $enum,
+                            'vtype' => 'int'
+                        ]
+                    ];
+                    continue;
+                }
+
+                if (strtolower($field) === 'integer' || strtolower($field) === 'int') {
+                    $field = [
+                        'type' => 'INTEGER',
+                        'attrs' => [
+                            'null' => false,
+                            'unsigned' => true,
+                            'default' => 0
+                        ],
+                        'format' => [
+                            'type' => 'number'
+                        ]
+                    ];
+                    continue;
+                }
+                if (strtolower($field) === 'tinyinteger' || strtolower($field) === 'tinyint') {
+                    $field = [
+                        'type' => 'TINYINT',
+                        'attrs' => [
+                            'null' => false,
+                            'unsigned' => true,
+                            'default' => 1
+                        ],
+                        'format' => [
+                            'type' => 'number'
+                        ]
+                    ];
+                    continue;
+                }
+                if (strtolower($field) === 'date') {
+                    $field = [
+                        'type' => 'DATE',
+                        'attrs' => [
+                            'null' => false
+                        ],
+                        'format' => [
+                            'type' => 'date'
+                        ]
+                    ];
+                    continue;
+                }
+                if (strtolower($field) === 'datetime') {
+                    $field = [
+                        'type' => 'DATETIME',
+                        'attrs' => [
+                            'null' => false
+                        ],
+                        'format' => [
+                            'type' => 'date'
+                        ]
+                    ];
+                    continue;
+                }
+                if (strtolower($field) === 'created') {
+                    $field = [
+                        'type' => 'TIMESTAMP',
+                        'attrs' => [
+                            'default' => 'CURRENT_TIMESTAMP'
+                        ],
+                        'format' => [
+                            'type' => 'date'
+                        ]
+                    ];
+                    continue;
+                }
+                if (strtolower($field) === 'updated') {
+                    $field = [
+                        'type' => 'TIMESTAMP',
+                        'attrs' => [
+                            'default' => 'CURRENT_TIMESTAMP',
+                            'update' => 'CURRENT_TIMESTAMP'
+                        ],
+                        'format' => [
+                            'type' => 'date'
+                        ]
+                    ];
+                    continue;
+                }
+            }
+
+            if (is_array($field)) {
+                if(!isset($field['index'])) {
+                    $field['index'] = (int) ($start . '000');
+                }
+            } else {
+                unset($config['fields'][$fieldName]);
             }
             $start++;
         }
-        
-        BModel::build($moduleDir, $tableName, $config);
-    }
-    static function buildController($moduleDir, $config)
-    {
-        BController::build($moduleDir, $config['name'], $config);
-    }
-
-    static function toCamel($string, $capitalizeFirstCharacter = false, $find = '_')
-    {
-
-        $str = str_replace(' ', '', ucwords(str_replace($find, ' ', $string)));
-
-        if (!$capitalizeFirstCharacter) {
-            $str[0] = strtolower($str[0]);
+        if (!isset($config['fields']['created'])) {
+            $start++;
+            $config['fields']['created'] = [
+                'type' => 'TIMESTAMP',
+                'attrs' => [
+                    'default' => 'CURRENT_TIMESTAMP'
+                ],
+                'format' => [
+                    'type' => 'date'
+                ],
+                'index' => (int) ($start . '000')
+            ];
+        }
+        if (!isset($config['fields']['updated'])) {
+            $start++;
+            $config['fields']['updated'] = [
+                'type' => 'TIMESTAMP',
+                'attrs' => [
+                    'default' => 'CURRENT_TIMESTAMP',
+                    'update' => 'CURRENT_TIMESTAMP'
+                ],
+                'format' => [
+                    'type' => 'date'
+                ],
+                'index' => (int) ($start . '000')
+            ];
         }
 
-        return $str;
+        BModel::build($moduleDir, $tableName, $config);
     }
-    static function toSnake($input)
+    static function buildController($moduleDir, $config, $moduleName = null)
     {
-        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));
+        $config['extends'] = '\Api\Controller';
+
+        if (!isset($config['auths'])) {
+            $config['auths'] = [
+                'app' => true,
+                'user' => true,
+            ];
+        }
+
+        if (!isset($config['gate'])) {
+            $config['gate'] = 'api';
+        }
+        if (!isset($config['ns'])) {
+            $config['ns'] = sprintf('%s\\Controller', to_ns($moduleName));
+        }
+
+        if (isset($config['parents']) && is_array($config['parents'])) {
+            foreach ($config['parents'] as $parentName => &$parent) {
+                if (isset($parent['filters']) && is_array($parent['filters'])) {
+                    foreach ($parent['filters'] as &$filter) {
+                        if (is_array($filter)) {
+                            $filterCtr = [];
+                            foreach ($filter as $f) {
+                                if (!is_array($f))
+                                    $filterCtr[$f] = [
+                                        'property' => 'id',
+                                        'column' => $f,
+                                    ];
+                            }
+                            $filter = $filterCtr;
+                        }
+                    }
+                }
+                if (isset($parent['setget']) && true === $parent['setget']) {
+                    $parent['setget'] = [
+                        'property' => 'id',
+                        'column' => $parentName
+                    ];
+                }
+            }
+        }
+
+        foreach ($config['filters'] as &$filter) {
+            if (is_array($filter) && count($filter) === 1 && !is_array($field = current($filter))) {
+                $filter = [
+                    $field => [
+                        'property' => 'id',
+                        'column' => $field,
+                    ]
+                ];
+            }
+        }
+
+        if (isset($config['methods']) && is_array($config['methods'])) {
+            foreach ($config['methods'] as $name => &$method) {
+                if (isset($method['filters']) && !is_array($method['filters'])) {
+                    $method['filters'] = explode(',', $method['filters']);
+                }
+                if (isset($method['sorts']) && !is_array($method['sorts'])) {
+                    $method['sorts'] = explode(',', $method['sorts']);
+                }
+                if ($name === 'create') {
+                    $method['form'] = sprintf('api.%s.create', $moduleName);
+                }
+                if ($name === 'update') {
+                    $method['form'] = sprintf('api.%s.update', $moduleName);
+                }
+                if ($name === 'delete') {
+                    if (is_int($method)) {
+                        $method = [
+                            'status' => (int) $method
+                        ];
+                    } else {
+                        $method = [];
+                    }
+                }
+            }
+        }
+        BController::build($moduleDir, $config['name'], $config);
     }
 }

@@ -3,7 +3,7 @@
 /**
  * Controller helper
  * @package cli-generator
- * @version 0.0.1
+ * @version 0.0.8
  */
 
 namespace CliGenerator\Library;
@@ -36,12 +36,12 @@ class Generator
                     'dependencies' => [
                         'required' => [
                             [
-                                'required-module' => 'git@hithub.com/required-module.git'
+                                'module-name' => NULL
                             ]
                         ],
                         'optional' => [
                             [
-                                'optional-module' => NULL,
+                                'optional-module-name' => NULL,
                             ]
                         ],
                     ],
@@ -58,10 +58,10 @@ class Generator
                                         "details"
                                     ]
                                 ],
-                                "Doc.Path" => "Store\/Product\/Details\/Options",
+                                "Doc.Path" => "Store/Product/Details/Options",
                                 "route" => [
                                     "path" => [
-                                        "value" => "\/store\/(:store)\/product\/(:product)\/details\/(:details)\/(:type)\/options",
+                                        "value" => "/store/(:store)/product/(:product)/details/(:details)/(:type)/options",
                                         "params" => [
                                             "store" => "number",
                                             "product" => "number",
