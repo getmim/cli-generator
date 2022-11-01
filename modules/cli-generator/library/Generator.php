@@ -3,7 +3,7 @@
 /**
  * Controller helper
  * @package cli-generator
- * @version 0.0.8
+ * @version 0.1.0
  */
 
 namespace CliGenerator\Library;
