@@ -3,7 +3,7 @@
 /**
  * Controller helper
  * @package cli-generator
- * @version 0.1.0
+ * @version 1.0.0
  */
 
 namespace CliGenerator\Library;
@@ -15,350 +15,157 @@ use CliModule\Library\BController;
 class Generator
 {
     static $config = [
-        'module' => [
-            'repo_dir' => '_repo',
-            'author' => [
-                'name' => 'Dev',
-                'email' => 'dev@github.net',
-                'website' => '',
+        'config' => [
+            'path' => false,
+            'name' => 'cart-module',
+            'git' => '',
+            'license' => 'MIT',
+            'files' => [
+                'install',
+                'update',
+                'remove'
             ],
-            'items' => [
-                [
-                    'path' => false,
-                    'name' => 'cart-module',
-                    'git' => '',
-                    'license' => 'MIT',
-                    'files' => [
-                        'install',
-                        'update',
-                        'remove'
-                    ],
-                    'dependencies' => [
-                        'required' => [
-                            [
-                                'module-name' => NULL
+            'dependencies' => [
+                'required' => [
+                    [
+                        'module-name' => NULL
+                    ]
+                ],
+                'optional' => [
+                    [
+                        'optional-module-name' => NULL,
+                    ]
+                ],
+            ],
+        ],
+        'model' => [
+            'id' => 'int',
+            'user' => NULL, // accepted params [ 'user,bigint' => 'user,fieldtype' ]
+            'object' => 'Object\\Model\\ObjectSample',
+            'text' => NULL, // accepted params: [ 'nullable;default' => 'nullable,null' ]
+            'varchar' => '100', // accepted params: [ 'len;unique;nullable;default' => '100,unique,nullable,null'] 
+            'bigint' => NULL, // accepted params: [ 'unsigned;nullable;default' => 'unsigned,nullable,1' ]
+            'double' => '12,3', // accepted params: [ '12,3;unsigned;nullable;default' => 'unsigned,nullable,1' ]
+            'integer' => NULL, // accepted params: [ 'unsigned;nullable;unique;default' = 'unsigned,nullable,unique,1' ]
+            'tinyint' => NULL, // accepted params: [ 'unsigned;nullable;default' = 'unsigned,nullable,1' ]
+            'enum' => 'merchant.status',
+            'date' => NULL, // accepted params: [ 'nullable,default' = 'nullable, null' ]
+            'datetime' => NULL, // accepted params: [ 'nullable,default' = 'nullable, null' ]
+        ],
+        'controller' => [
+            "gate" => "api",
+            "model" => "BbGallery",
+            "format" => [
+                "name" => "details-options",
+                "fields" => [
+                    "product",
+                    "details"
+                ]
+            ],
+            "Doc.Path" => "BbMedia/Gallery",
+            "route" => [
+                "path" => [
+                    "value" => "/media/(:media)/gallery",
+                    "params" => [
+                        "media" => "number"
+                    ]
+                ]
+            ],
+            "parents" => [
+                "store" => [
+                    "model" => "BbMedia\\Model\\Media",
+                    "field" => "id",
+                    "filters" => [
+                        "status" => "1",
+                        "services" => [
+                            "user" => [
+                                "property" => "id",
+                                "column" => "user"
+                            ],
+                        ]
+                    ]
+                ],
+                "details" => [
+                    "model" => "Details\\Model\\Details",
+                    "field" => "id",
+                    "filters" => [
+                        "status" => "1",
+                        "parents" => [
+                            "store" => [
+                                "property" => "id",
+                                "column" => "store"
+                            ],
+                            "product" => [
+                                "property" => "id",
+                                "column" => "product"
                             ]
-                        ],
-                        'optional' => [
-                            [
-                                'optional-module-name' => NULL,
-                            ]
-                        ],
+                        ]
                     ],
-                    'controller' => [
-                        'items' => [
-                            [
-                                "gate" => "api",
-                                "extends" => "\\Api\\Controller",
-                                "model" => "\\Options\\Model\\Options",
-                                "format" => [
-                                    "name" => "details-options",
-                                    "fields" => [
-                                        "product",
-                                        "details"
-                                    ]
-                                ],
-                                "Doc.Path" => "Store/Product/Details/Options",
-                                "route" => [
-                                    "path" => [
-                                        "value" => "/store/(:store)/product/(:product)/details/(:details)/(:type)/options",
-                                        "params" => [
-                                            "store" => "number",
-                                            "product" => "number",
-                                            "details" => "number",
-                                            "type" => "slug"
-                                        ]
-                                    ]
-                                ],
-                                "parents" => [
-                                    "store" => [
-                                        "model" => "Store\\Model\\Store",
-                                        "field" => "id",
-                                        "filters" => [
-                                            "status" => "1",
-                                            "services" => [
-                                                "user" => [
-                                                    "property" => "id",
-                                                    "column" => "user"
-                                                ],
-                                                "brand" => [
-                                                    "property" => "id",
-                                                    "column" => "merchant_brand"
-                                                ]
-                                            ]
-                                        ]
-                                    ],
-                                    "product" => [
-                                        "model" => "Product\\Model\\Product",
-                                        "field" => "id",
-                                        "filters" => [
-                                            "parents" => [
-                                                "store" => [
-                                                    "property" => "id",
-                                                    "column" => "store"
-                                                ]
-                                            ]
-                                        ],
-                                        "setget" => [
-                                            "property" => "id",
-                                            "column" => "product"
-                                        ]
-                                    ],
-                                    "details" => [
-                                        "model" => "Details\\Model\\Details",
-                                        "field" => "id",
-                                        "filters" => [
-                                            "status" => "1",
-                                            "parents" => [
-                                                "store" => [
-                                                    "property" => "id",
-                                                    "column" => "store"
-                                                ],
-                                                "product" => [
-                                                    "property" => "id",
-                                                    "column" => "product"
-                                                ]
-                                            ]
-                                        ],
-                                        "setget" => [
-                                            "property" => "id",
-                                            "column" => "details"
-                                        ]
-                                    ]
-                                ],
-                                "auths" => [
-                                    "app" => true,
-                                    "user" => true
-                                ],
-                                "filters" => [
-                                    "status" => "1",
-                                    "services" => [
-                                        "user" => [
-                                            "property" => "id",
-                                            "column" => "user"
-                                        ]
-                                    ],
-                                    "parents" => [
-                                        "details" => [
-                                            "property" => "id",
-                                            "column" => "details"
-                                        ]
-                                    ]
-                                ],
-                                "methods" => [
-                                    "index" => [
-                                        "filters" => [
-                                            "name",
-                                            "status"
-                                        ],
-                                        "sorts" => [
-                                            "id",
-                                            "name",
-                                            "created"
-                                        ]
-                                    ],
-                                    "single" => [],
-                                    "create" => [
-                                        "form" => "api.details-options.create",
-                                        "columns" => [
-                                            "services" => [
-                                                "user" => [
-                                                    "property" => "id",
-                                                    "column" => "user"
-                                                ]
-                                            ]
-                                        ]
-                                    ],
-                                    "update" => [
-                                        "form" => "api.details-options.update"
-                                    ],
-                                    "delete" => [
-                                        "status" => "0"
-                                    ]
-                                ],
-                                "name" => "DetailsController",
-                                "ns" => "Module\\Controller"
-                            ]
-                        ],
+                    "setget" => [
+                        "property" => "id",
+                        "column" => "details"
+                    ]
+                ]
+            ],
+            "filters" => [
+                "status" => "1",
+                "services" => [
+                    "user" => [
+                        "property" => "id",
+                        "column" => "user"
+                    ]
+                ],
+                "parents" => [
+                    "details" => [
+                        "property" => "id",
+                        "column" => "details"
+                    ]
+                ]
+            ],
+            "methods" => [
+                "index" => [
+                    "filters" => [
+                        "name",
+                        "status"
                     ],
-                    'model' => [
-                        'items' => [
-                            [
-                                'name' => 'gallery_item',
-                                'fields' => [
-                                    'id' => [
-                                        'type' => 'INTEGER',
-                                        'attrs' => [
-                                            'unsigned' => TRUE,
-                                            'primary_key' => TRUE,
-                                            'auto_increment' => TRUE,
-                                        ],
-                                        'format' => [
-                                            'type' => 'number'
-                                        ]
-                                    ],
-                                    'user' => [
-                                        'type' => 'INTEGER',
-                                        'attrs' => [
-                                            'unsigned' => TRUE,
-                                            'null' => FALSE,
-                                        ],
-                                        'format' => [
-                                            'type' => 'user'
-                                        ]
-                                    ],
-                                    'object' => [
-                                        'type' => 'INTEGER',
-                                        'attrs' => [
-                                            'unsigned' => TRUE,
-                                            'null' => FALSE,
-                                        ],
-                                        'format' => [
-                                            'type' => 'object',
-                                            'model' => [
-                                                'name' => 'Object\\Model\\Obj',
-                                                'field' => 'id',
-                                                'type' => 'number'
-                                            ],
-                                            'format' => 'std-object'
-                                        ]
-                                    ],
-                                    'text' => [
-                                        'type' => 'TEXT',
-                                        'attrs' => [],
-                                        'format' => [
-                                            'type' => 'text'
-                                        ]
-                                    ],
-                                    'varchar' => [
-                                        'type' => 'VARCHAR',
-                                        'length' => 100,
-                                        'attrs' => [
-                                            'null' => TRUE,
-                                            'unique' => TRUE,
-                                        ],
-                                        'format' => [
-                                            'type' => 'text'
-                                        ]
-                                    ],
-                                    'bigint' => [
-                                        'type' => 'BIGINT',
-                                        'attrs' => [
-                                            'unsigned' => TRUE,
-                                            'null' => FALSE,
-                                            'default' => 1,
-                                        ],
-                                        'format' => [
-                                            'type' => 'number'
-                                        ]
-                                    ],
-                                    'double' => [
-                                        'type' => 'DOUBLE',
-                                        'length' => '12,3',
-                                        'attrs' => [
-                                            'unsigned' => TRUE,
-                                            'null' => FALSE,
-                                            'default' => 12.2,
-                                        ],
-                                        'format' => [
-                                            'type' => 'number'
-                                        ]
-                                    ],
-                                    'integer' => [
-                                        'type' => 'INTEGER',
-                                        'attrs' => [
-                                            'unsigned' => TRUE,
-                                            'null' => FALSE,
-                                            'default' => 1,
-                                        ],
-                                        'format' => [
-                                            'type' => 'number'
-                                        ]
-                                    ],
-                                    'tinyint' => [
-                                        'type' => 'TINYINT',
-                                        'attrs' => [
-                                            'unsigned' => TRUE,
-                                            'null' => FALSE,
-                                            'default' => 1,
-                                        ],
-                                        'format' => [
-                                            'type' => 'number'
-                                        ]
-                                    ],
-                                    'enum' => [
-                                        'type' => 'TINYINT',
-                                        'attrs' => [
-                                            'unsigned' => TRUE,
-                                            'null' => FALSE,
-                                            'default' => 1,
-                                        ],
-                                        'format' => [
-                                            'type' => 'enum',
-                                            'enum' => 'merchant.status',
-                                            'vtype' => 'int'
-                                        ]
-                                    ],
-                                    'date' => [
-                                        'type' => 'DATE',
-                                        'attrs' => [
-                                            'null' => FALSE,
-                                        ],
-                                        'format' => [
-                                            'type' => 'date'
-                                        ]
-                                    ],
-                                    'datetime' => [
-                                        'type' => 'DATETIME',
-                                        'attrs' => [
-                                            'null' => FALSE,
-                                        ],
-                                        'format' => [
-                                            'type' => 'date'
-                                        ]
-                                    ],
-                                    'created' => [
-                                        'type' => 'TIMESTAMP',
-                                        'attrs' => [
-                                            'default' => 'CURRENT_TIMESTAMP',
-                                        ],
-                                        'format' => [
-                                            'type' => 'date'
-                                        ]
-                                    ],
-                                    'updated' => [
-                                        'type' => 'TIMESTAMP',
-                                        'attrs' => [
-                                            'default' => 'CURRENT_TIMESTAMP',
-                                            'update' => 'CURRENT_TIMESTAMP',
-                                        ],
-                                        'format' => [
-                                            'type' => 'date'
-                                        ]
-                                    ],
-
-                                ]
+                    "sorts" => [
+                        "id",
+                        "name",
+                        "created"
+                    ]
+                ],
+                "single" => [],
+                "create" => [
+                    "form" => "api.details-options.create",
+                    "columns" => [
+                        "services" => [
+                            "user" => [
+                                "property" => "id",
+                                "column" => "user"
                             ]
                         ]
                     ]
+                ],
+                "update" => [
+                    "form" => "api.details-options.update"
+                ],
+                "delete" => [
+                    "status" => "0"
                 ]
-            ]
+            ],
         ],
         'app' => [
-            'items' => [
-                [
-                    'path' => false,
-                    'name' => 'CartApp',
-                    'version' => '0.0.1',
-                    'host' => 'cart.test',
-                    'https' => false,
-                    'keep_module' => true,
-                    'timezone' => 'Asia/Jakarta',
-                    'local_repo' => __DIR__ . '_repo',
-                    'moduledir' => 'module-cart',
-                ]
-            ]
-        ]
+            'type' => 'app',
+            'path' => false,
+            'name' => 'CartApp',
+            'version' => '0.0.1',
+            'host' => 'cart.test',
+            'https' => false,
+            'keep_module' => true,
+            'timezone' => 'Asia/Jakarta',
+            'local_repo' => __DIR__ . '_repo',
+            'moduledir' => 'module-cart',
+        ],
 
     ];
 
@@ -432,51 +239,76 @@ class Generator
         ]
     ];
 
-    public static function build($generatorBasedir, $command)
+    public static function build($generatorBasedir, $commandsArgs)
     {
+        $inputFile = 'generator.yaml';
+        $output = 'generator';
+        if (count($commandsArgs) > 2) {
+            Bash::error('Too Many Arguments');
+        }
+        if (count($commandsArgs) === 2 && current($commandsArgs) === 'run') {
+            if (!is_file($generatorBasedir . '/' . $commandsArgs[1])) {
+                Bash::error('Invalid generator file name');
+            }
+            $inputFile = $commandsArgs[1];
+        }
+
+        if (count($commandsArgs) === 2 &&  current($commandsArgs) === 'init') {
+            $output = to_slug($commandsArgs[1]);
+        }
+        $command = current($commandsArgs);
+
+
         if ($command === 'init') {
-            self::boilerplate($generatorBasedir);
+            self::boilerplate($generatorBasedir, $output);
             Bash::echo('Config file generated');
         } elseif ($command === 'run') {
-            self::generate($generatorBasedir);
+            self::generate($generatorBasedir, $inputFile);
         } else {
             Bash::error('Unrecognized command!');
         }
         return;
     }
 
-    static function boilerplate($dir)
+    static function boilerplate($dir, $output)
     {
-        Fs::write($dir . '/generator.yaml', \yaml_emit(self::$config));
-        Fs::write($dir . '/options.yaml', \yaml_emit(self::$availableOptions));
+        $emit = self::$config['model'];
+        $currentDirName = explode('/', $dir);
+        $currentDirName = to_slug(end($currentDirName));
+        $cname = str_replace('-', '_', $currentDirName);
+        
+        if ($output === 'controller') {
+            $emit = self::$config['controller'];
+        }
+        if ($output === 'app') {
+            $emit = self::$config['controller'];
+        }
+        $emit = [
+            $cname => $emit
+        ];
+        Fs::write($dir . sprintf('/%s.yaml', $output), \yaml_emit($emit));
     }
 
-    static function generate($dir)
+    static function generate($dir, $inputFile)
     {
-        $yaml = file_get_contents($dir . '/generator.yaml') ?? '';
+        if(!is_file($dir . '/'. $inputFile)) {
+            Bash::error('File not found, please specify name!');
+        }
+        $yaml = file_get_contents($dir . '/'. $inputFile) ?? '';
         $yaml = \yaml_parse($yaml);
 
-        $appConfigs = $yaml['app']['items'] ?? [];
-        $moduleConfigs = $yaml['module']['items'] ?? [];
-
-        foreach ($appConfigs as $config) {
-            self::buildApp($dir, $config);
+        if( isset( $yaml['host'] ) ) {
+            self::buildApp($dir, $yaml);
+            Bash::echo('Generator executed successfully');
         }
-        foreach ($moduleConfigs as $config) {
-            $config['author'] = $yaml['module']['author'];
-            self::buildModule($dir . '/' . $yaml['module']['repo_dir'], $config);
+        else {
+            ModuleBuilder::buildExtend($dir, $yaml);
+            Bash::echo('Generator executed successfully');
         }
-        return;
     }
 
     static function buildApp()
     {
         // to-do list
-    }
-
-    static function buildModule($dir, $config)
-    {
-        ModuleBuilder::buildExtend($dir . '/' . $config['name'], $config);
-        Bash::echo('Generator executed successfully');
     }
 }

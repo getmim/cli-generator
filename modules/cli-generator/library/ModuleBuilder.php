@@ -3,7 +3,7 @@
 /**
  * Module builder
  * @package cli-generator
- * @version 0.1.0
+ * @version 1.0.0
  */
 
 namespace CliGenerator\Library;
@@ -17,58 +17,40 @@ use CliModule\Library\ConfigCollector;
 class ModuleBuilder extends \CliModule\Library\Builder
 
 {
-    static function buildExtend(string $here, array $config): bool
+    static function buildExtend(string $here, array $obj): bool
     {
-        if (isset($config['regenerate']) && $config['regenerate'] === true) {
-            if (is_dir($here)) {
-                Fs::rmdir($here);
-            }
-        }
-
-        // make sure the folder is empty
-        $models = $config['model']['items'] ?? [];
-        $controllers = $config['controller']['items'] ?? [];
-        unset($config['controller']);
-        unset($config['model']);
         Fs::mkdir($here);
 
-        $gitignore = [];
-            foreach ($config['gitignore'] ?? [] as $ignore) {
-                $gitignore[$ignore] = true;
-            }
-            $createModuleDir = sprintf('modules/%s', $config['name']);
-            $config = [
-                '__name' => $config['name'],
-                '__version' => '0.0.1',
-                '__git' => $config['git'] ?? '-',
-                '__license' => $config['license'] ?? 'MIT',
-                '__author' => $config['author'] ?? ['name' => '', 'email' => '-', 'website' => '-'],
-                '__files' => [
-                    $createModuleDir => $config['files'] ?? ['install', 'update', 'remove']
-                ],
-                '__dependencies' => [
-                    'required' => $config['dependencies']['required'] ?? [['required-module' => NULL]],
-                    'optional' => $config['dependencies']['optional'] ?? [['optional-module' => NULL,]],
-                ],
-                'autoload' => [
-                    'classes' => [],
-                    'files' => []
-                ],
-                '__gitignore' => $gitignore
-            ];
-
-        if (Fs::scan($here)) {
-            Bash::echo('Target module already exists : ' . $here);
-        } else {
+        $name = to_slug(current(array_keys($obj)));
+        $createModuleDir = sprintf('modules/%s', $name);
+        $config = [
+            '__name' => $name,
+            '__version' => '0.0.1',
+            '__git' => '-',
+            '__license' => 'MIT',
+            '__author' => $config['author'] ?? ['name' => '', 'email' => '-', 'website' => '-'],
+            '__files' => [
+                $createModuleDir => ['install', 'update', 'remove']
+            ],
+            '__dependencies' => [
+                'required' => [],
+                'optional' => [],
+            ],
+            'autoload' => [
+                'classes' => [],
+                'files' => []
+            ],
+            '__gitignore' => []
+        ]; {
             // make sure we can write here
             if (!is_writable($here)) {
                 Bash::echo('Unable to write to current directory : ' . $here);
                 return false;
             }
-            // $config = ConfigCollector::collect($here);
 
-            if (!$config)
+            if (!$config) {
                 return false;
+            }
 
             $mod_name = $config['__name'];
             $mod_dir  = $here . '/modules/' . $mod_name;
@@ -85,23 +67,24 @@ class ModuleBuilder extends \CliModule\Library\Builder
             // now, create readme file
             self::readme($here, $config['__name'], $config['__git']);
         }
-
-
-
-
-        foreach ($models as $c) {
-            self::buildModel($here, $c, $config['__name']);
-        }
-        foreach ($controllers as $c) {
-            self::buildController($here, $c, $config['__name']);
+        $first = current($obj);
+        $isApi = isset($first['gate']);
+        unset($first);
+        if (!$isApi) {
+            // object
+            self::buildModel($here, $obj, $config);
+        } else {
+            // api
+            self::buildController($here, $obj, $config);
         }
         return true;
     }
 
-    static function buildModel($moduleDir, $config, $moduleName = null)
+    static function buildModel($moduleDir, $data, $config = null)
     {
-        $tableName = $config['name'];
-        $config['name'] = to_ns($tableName);
+        $currentDirName = explode('/', $moduleDir);
+        $currentDirName = to_slug(end($currentDirName));
+        $tableName = to_slug(current(array_keys($data)));
         $config['properties'] = [
             [
                 'name' => 'table',
@@ -129,15 +112,25 @@ class ModuleBuilder extends \CliModule\Library\Builder
             $config['implements'] = [];
         }
         if (!isset($config['ns'])) {
-            $config['ns'] = to_ns($moduleName) . '\\Model';
+            $config['ns'] = to_ns(current(array_keys($data))) . '\\Model';
         }
 
         $start = 1;
-        foreach ($config['fields'] as $fieldName => &$field) {
-            if (is_string($field)) {
-                if ($fieldName === 'id' && $field === 'id') {
-                    $field = [
-                        'type' => 'INTEGER',
+        $data = current($data);
+        foreach ($data as $fieldName => &$field) {
+            if (is_string($field) || !$field) {
+
+                if ($field && ($fieldName === 'id' || str_starts_with($field, 'id;'))) {
+
+                    $params = explode(';', $field);
+                    $type = 'INTEGER';
+
+                    if (isset($params[1]) && $params[1] === 'bigint') {
+                        $type = 'BIGINT';
+                    }
+
+                    $config['fields'][$fieldName] = [
+                        'type' => $type,
                         'attrs' => [
                             'unsigned' => true,
                             'primary_key' => true,
@@ -148,12 +141,30 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         ],
                         'index' => (int) ($start . '000')
                     ];
+
                     $start++;
                     continue;
                 }
-                if ($fieldName === 'user' && $field === 'user') {
-                    $field = [
-                        'type' => 'INTEGER',
+
+                if (($fieldName === 'user' && !$field) || ($field === 'user' || ($field && str_starts_with($field, 'user;')))) {
+
+                    $type = 'INTEGER';
+
+                    if ($field) {
+
+                        if ($field === 'user') {
+                            $fieldName = 'user';
+                        } else {
+                            $params = explode(';', $field);
+                            array_shift($params);
+                            if (isset($params[0]) && $params[0] === 'bigint') {
+                                $type = 'BIGINT';
+                            }
+                        }
+                    }
+
+                    $config['fields'][$fieldName] = [
+                        'type' => $type,
                         'attrs' => [
                             'unsigned' => true,
                             'null' => false,
@@ -166,26 +177,27 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     $start++;
                     continue;
                 }
-                if (strtolower($field) === 'text') {
-                    $field = [
+
+                if ($field && (strtolower($field) === 'text' || str_starts_with($field, 'text;'))) {
+
+                    $params = explode(';', $field);
+                    array_shift($params);
+                    $attrs = [];
+
+                    if (in_array('nullable', $params)) {
+                        $attrs['null'] = true;
+                    }
+
+                    if (count($params) === 2) {
+                        $attrs['default'] = trim(end($params));
+                        if (strtolower($attrs['default']) === 'null') {
+                            $attrs['default'] = null;
+                        }
+                    }
+
+                    $config['fields'][$fieldName] = [
                         'type' => 'TEXT',
-                        'attrs' => [],
-                        'format' => [
-                            'type' => 'text'
-                        ],
-                        'index' => (int) ($start . '000')
-                    ];
-                    $start++;
-                    continue;
-                }
-                if (strtolower($field) === 'varchar') {
-                    $field = [
-                        'type' => 'VARCHAR',
-                        'length' => 100,
-                        'attrs' => [
-                            'null' => true,
-                            'unique' => false
-                        ],
+                        'attrs' => $attrs,
                         'format' => [
                             'type' => 'text'
                         ],
@@ -195,15 +207,44 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     continue;
                 }
 
-                if (strtolower($field) === 'double') {
-                    $field = [
+                if ($field && (strtolower($field) === 'double' || str_starts_with($field, 'double;'))) {
+
+                    $params = explode(';', $field);
+                    array_shift($params);
+                    $attrs = [];
+
+                    if (in_array('nullable', $params)) {
+                        $attrs['null'] = true;
+                    }
+
+                    if (isset($params[0])) {
+                        $len = $params[0];
+                    }
+
+                    if (in_array('nullable', $params)) {
+                        $attrs['null'] = true;
+                    }
+
+                    if (in_array('unique', $params)) {
+                        $attrs['unique'] = true;
+                    }
+
+                    if (in_array('unsigned', $params)) {
+                        $attrs['unsigned'] = true;
+                    }
+
+                    if (count($params) === 4) {
+
+                        $attrs['default'] = trim(end($params));
+                        if (strtolower($attrs['default']) === 'null') {
+                            $attrs['default'] = null;
+                        }
+                    }
+
+                    $config['fields'][$fieldName] = [
                         'type' => 'DOUBLE',
-                        'length' => '12,3',
-                        'attrs' => [
-                            'null' => true,
-                            'unsigned' => true,
-                            'default' => 0
-                        ],
+                        'length' => $len,
+                        'attrs' => $attrs,
                         'format' => [
                             'type' => 'number'
                         ],
@@ -213,35 +254,35 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     continue;
                 }
 
-                if ( str_starts_with($field, "enum:") ) {
-                    $enum = explode('enum:', $field);
-                    $enum = end($enum);
-                    $field = [
-                        'type' => 'TINYINT',
-                        'attrs' => [
-                            'unsigned' => true,
-                            'null' => false,
-                            'default' => 1
-                        ],
-                        'format' => [
-                            'type' => 'enum',
-                            'enum' => $enum,
-                            'vtype' => 'int'
-                        ],
-                        'index' => (int) ($start . '000')
-                    ];
-                    $start++;
-                    continue;
-                }
+                if ($field && ((strtolower($field) === 'integer' || str_starts_with($field, 'integer;')) || (strtolower($field) === 'int' || str_starts_with($field, 'int;')))) {
 
-                if (strtolower($field) === 'integer' || strtolower($field) === 'int') {
-                    $field = [
+                    $params = explode(';', $field);
+                    array_shift($params);
+                    $attrs = [];
+
+                    if (in_array('nullable', $params)) {
+                        $attrs['null'] = true;
+                    }
+
+                    if (in_array('unsigned', $params)) {
+                        $attrs['unsigned'] = true;
+                    }
+
+                    if (in_array('unique', $params)) {
+                        $attrs['unique'] = true;
+                    }
+
+                    if (count($params) === 4) {
+
+                        $attrs['default'] = trim(end($params));
+                        if (strtolower($attrs['default']) === 'null') {
+                            $attrs['default'] = null;
+                        }
+                    }
+
+                    $config['fields'][$fieldName] = [
                         'type' => 'INTEGER',
-                        'attrs' => [
-                            'null' => false,
-                            'unsigned' => true,
-                            'default' => 0
-                        ],
+                        'attrs' => $attrs,
                         'format' => [
                             'type' => 'number'
                         ],
@@ -250,14 +291,35 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     $start++;
                     continue;
                 }
-                if (strtolower($field) === 'tinyinteger' || strtolower($field) === 'tinyint') {
-                    $field = [
+
+                if ($field && ((strtolower($field) === 'tinyinteger' || str_starts_with($field, 'tinyinteger;')) || (strtolower($field) === 'tinyint' || str_starts_with($field, 'tinyint;')))) {
+
+                    $params = explode(';', $field);
+                    array_shift($params);
+                    $attrs = [];
+
+                    if (in_array('nullable', $params)) {
+                        $attrs['null'] = true;
+                    }
+
+                    if (in_array('unsigned', $params)) {
+                        $attrs['unsigned'] = true;
+                    }
+
+                    if (in_array('unique', $params)) {
+                        $attrs['unique'] = true;
+                    }
+
+                    if (count($params) === 4) {
+                        $attrs['default'] = trim(end($params));
+                        if (strtolower($attrs['default']) === 'null') {
+                            $attrs['default'] = null;
+                        }
+                    }
+
+                    $config['fields'][$fieldName] = [
                         'type' => 'TINYINT',
-                        'attrs' => [
-                            'null' => false,
-                            'unsigned' => true,
-                            'default' => 1
-                        ],
+                        'attrs' => $attrs,
                         'format' => [
                             'type' => 'number'
                         ],
@@ -266,12 +328,67 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     $start++;
                     continue;
                 }
-                if (strtolower($field) === 'date') {
-                    $field = [
+
+                if ($field && (strtolower($field) === 'varchar' || str_starts_with($field, 'varchar;'))) {
+
+                    $params = explode(';', $field);
+                    $len = 100;
+                    array_shift($params);
+
+                    if (isset($params[0])) {
+                        $len = $params[0];
+                    }
+
+                    $attrs = [];
+
+                    if (in_array('nullable', $params)) {
+                        $attrs['null'] = true;
+                    }
+
+                    if (in_array('unique', $params)) {
+                        $attrs['unique'] = true;
+                    }
+
+                    if (count($params) === 4) {
+                        $attrs['default'] = trim(end($params));
+                        if (strtolower($attrs['default']) === 'null') {
+                            $attrs['default'] = null;
+                        }
+                    }
+
+                    $config['fields'][$fieldName] = [
+                        'type' => 'TEXT',
+                        'length' => $len,
+                        'attrs' => $attrs,
+                        'format' => [
+                            'type' => 'text'
+                        ],
+                        'index' => (int) ($start . '000')
+                    ];
+                    $start++;
+                    continue;
+                }
+
+                if ($field && (strtolower($field) === 'date' || str_starts_with($field, 'date;'))) {
+
+                    $params = explode(';', $field);
+                    array_shift($params);
+                    $attrs = [];
+
+                    if (in_array('nullable', $params)) {
+                        $attrs['null'] = true;
+                    }
+
+                    if (count($params) === 2) {
+                        $attrs['default'] = trim(end($params));
+                        if (strtolower($attrs['default']) === 'null') {
+                            $attrs['default'] = null;
+                        }
+                    }
+
+                    $config['fields'][$fieldName] = [
                         'type' => 'DATE',
-                        'attrs' => [
-                            'null' => false
-                        ],
+                        'attrs' => $attrs,
                         'format' => [
                             'type' => 'date'
                         ],
@@ -280,12 +397,27 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     $start++;
                     continue;
                 }
-                if (strtolower($field) === 'datetime') {
-                    $field = [
+
+                if ($field && (strtolower($field) === 'datetime' || str_starts_with($field, 'datetime;'))) {
+
+                    $params = explode(';', $field);
+                    array_shift($params);
+                    $attrs = [];
+
+                    if (in_array('nullable', $params)) {
+                        $attrs['null'] = true;
+                    }
+
+                    if (count($params) === 2) {
+                        $attrs['default'] = trim(end($params));
+                        if (strtolower($attrs['default']) === 'null') {
+                            $attrs['default'] = null;
+                        }
+                    }
+
+                    $config['fields'][$fieldName] = [
                         'type' => 'DATETIME',
-                        'attrs' => [
-                            'null' => false
-                        ],
+                        'attrs' => $attrs,
                         'format' => [
                             'type' => 'date'
                         ],
@@ -294,47 +426,40 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     $start++;
                     continue;
                 }
-                if (strtolower($field) === 'created') {
-                    $field = [
-                        'type' => 'TIMESTAMP',
-                        'attrs' => [
-                            'default' => 'CURRENT_TIMESTAMP'
-                        ],
-                        'format' => [
-                            'type' => 'date'
-                        ],
-                        'index' => (int) ($start . '000')
-                    ];
-                    $start++;
+
+                if ($field && str_starts_with($field, 'enum;')) {
+
+                    $params = explode(';', $field);
+                    array_shift($params);
+
+                    if (isset($params[0])) {
+
+                        $len = $params[0];
+                        $config['fields'][$fieldName] = [
+                            'type' => 'TINYINT',
+                            'attrs' => [
+                                'unsigned' => true,
+                                'null' => false,
+                                'default' => 1
+                            ],
+                            'format' => [
+                                'type' => 'enum',
+                                'enum' => $params[0],
+                                'vtype' => 'int'
+                            ],
+                            'index' => (int) ($start . '000')
+                        ];
+                        $start++;
+                    }
                     continue;
-                }
-                if (strtolower($field) === 'updated') {
-                    $field = [
-                        'type' => 'TIMESTAMP',
-                        'attrs' => [
-                            'default' => 'CURRENT_TIMESTAMP',
-                            'update' => 'CURRENT_TIMESTAMP'
-                        ],
-                        'format' => [
-                            'type' => 'date'
-                        ],
-                        'index' => (int) ($start . '000')
-                    ];
-                    $start++;
-                    continue;
-                }
-            }
-            if (is_array($field)) {
-                if(!isset($field['index'])) {
-                    $field['index'] = (int) ($start . '000');
                 }
             } else {
-                unset($config['fields'][$fieldName]);
+                $field['index'] = (int) ($start . '000');
+                $config['fields'][$fieldName] = $field;
+                $start++;
             }
-            $start++;
         }
         if (!isset($config['fields']['created'])) {
-            $start++;
             $config['fields']['created'] = [
                 'type' => 'TIMESTAMP',
                 'attrs' => [
@@ -360,11 +485,16 @@ class ModuleBuilder extends \CliModule\Library\Builder
                 'index' => (int) ($start . '000')
             ];
         }
-
         BModel::build($moduleDir, $tableName, $config);
     }
-    static function buildController($moduleDir, $config, $moduleName = null)
+    static function buildController($moduleDir, $data, $config = null)
     {
+        $currentDirName = explode('/', $moduleDir);
+        $currentDirName = to_slug(end($currentDirName));
+        $cname = to_slug(current(array_keys($data)));
+        $config['name'] = to_ns($cname);
+        $data = current($data);
+
         if (isset($config['regenerate']) && $config['regenerate'] === true) {
             if (is_dir($moduleDir)) {
                 Fs::rmdir($moduleDir);
@@ -383,11 +513,11 @@ class ModuleBuilder extends \CliModule\Library\Builder
             $config['gate'] = 'api';
         }
         if (!isset($config['ns'])) {
-            $config['ns'] = sprintf('%s\\Controller', to_ns($moduleName));
+            $config['ns'] = sprintf('%s\\Controller', to_ns($cname));
         }
 
-        if (isset($config['parents']) && is_array($config['parents'])) {
-            foreach ($config['parents'] as $parentName => &$parent) {
+        if (isset($data['parents']) && is_array($data['parents'])) {
+            foreach ($data['parents'] as $parentName => &$parent) {
                 if (isset($parent['filters']) && is_array($parent['filters'])) {
                     foreach ($parent['filters'] as &$filter) {
                         if (is_array($filter)) {
@@ -410,9 +540,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     ];
                 }
             }
+            $config['parents'] = $data['parents'];
         }
 
-        foreach ($config['filters'] as &$filter) {
+        foreach ($data['filters'] as &$filter) {
             if (is_array($filter) && count($filter) === 1 && !is_array($field = current($filter))) {
                 $filter = [
                     $field => [
@@ -422,9 +553,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                 ];
             }
         }
+        $config['filters'] = $data['filters'];
 
-        if (isset($config['methods']) && is_array($config['methods'])) {
-            foreach ($config['methods'] as $name => &$method) {
+        if (isset($data['methods']) && is_array($data['methods'])) {
+            foreach ($data['methods'] as $name => &$method) {
                 if (isset($method['filters']) && !is_array($method['filters'])) {
                     $method['filters'] = explode(',', $method['filters']);
                 }
@@ -432,10 +564,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     $method['sorts'] = explode(',', $method['sorts']);
                 }
                 if ($name === 'create') {
-                    $method['form'] = sprintf('api.%s.create', str_replace('api-', '', $moduleName ));
+                    $method['form'] = sprintf('api.%s.create', str_replace('api-', '', $cname));
                 }
                 if ($name === 'update') {
-                    $method['form'] = sprintf('api.%s.update', str_replace('api-', '', $moduleName ));
+                    $method['form'] = sprintf('api.%s.update', str_replace('api-', '', $cname));
                 }
                 if ($name === 'delete') {
                     if (is_int($method)) {
@@ -446,8 +578,12 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         $method = [];
                     }
                 }
+                $config['methods'][$name] = $method;
             }
         }
-        BController::build($moduleDir, $config['name'], $config);
+        // dd($config, $data);
+        $config['route'] = $data['route'];
+        $config['model'] = $data['model'];
+        BController::build($moduleDir, $cname, $config);
     }
 }

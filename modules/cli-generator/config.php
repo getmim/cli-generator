@@ -2,7 +2,7 @@
 
 return [
     '__name' => 'cli-generator',
-    '__version' => '0.1.0',
+    '__version' => '1.0.0',
     '__git' => 'git@github.com:getmim/cli-generator.git',
     '__license' => 'MIT',
     '__author' => [
@@ -44,7 +44,7 @@ return [
                 'path' => [
                     'value' => 'generator (:command)',
                     'params' => [
-                        'command' => 'slug'
+                        'command' => 'rest'
                     ]
                 ],
                 'handler' => 'CliGenerator\\Controller\\Generator::generator'
