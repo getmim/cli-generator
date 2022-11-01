@@ -20,6 +20,14 @@ class ModuleBuilder extends \CliModule\Library\Builder
     static function buildExtend(string $here, array $obj): bool
     {
         Fs::mkdir($here);
+        $author = ['name' => '', 'email' => '-', 'website' => '-'];
+
+        if(is_file(BASEPATH . '/etc/cache/module-init.php')) {
+            $include = require BASEPATH . '/etc/cache/module-init.php';
+            if(isset($include['author'])) {
+                $author = $include['author'];
+            }
+        }
 
         $name = to_slug(current(array_keys($obj)));
         $createModuleDir = sprintf('modules/%s', $name);
@@ -28,7 +36,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
             '__version' => '0.0.1',
             '__git' => '-',
             '__license' => 'MIT',
-            '__author' => $config['author'] ?? ['name' => '', 'email' => '-', 'website' => '-'],
+            '__author' => $author,
             '__files' => [
                 $createModuleDir => ['install', 'update', 'remove']
             ],
