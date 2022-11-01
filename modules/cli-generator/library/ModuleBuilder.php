@@ -32,17 +32,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
         unset($config['model']);
         Fs::mkdir($here);
 
-        if (Fs::scan($here)) {
-            Bash::echo('Target module already exists : ' . $here);
-        } else {
-            // make sure we can write here
-            if (!is_writable($here)) {
-                Bash::echo('Unable to write to current directory : ' . $here);
-                return false;
-            }
-            // $config = ConfigCollector::collect($here);
-
-            $gitignore = [];
+        $gitignore = [];
             foreach ($config['gitignore'] ?? [] as $ignore) {
                 $gitignore[$ignore] = true;
             }
@@ -66,6 +56,16 @@ class ModuleBuilder extends \CliModule\Library\Builder
                 ],
                 '__gitignore' => $gitignore
             ];
+
+        if (Fs::scan($here)) {
+            Bash::echo('Target module already exists : ' . $here);
+        } else {
+            // make sure we can write here
+            if (!is_writable($here)) {
+                Bash::echo('Unable to write to current directory : ' . $here);
+                return false;
+            }
+            // $config = ConfigCollector::collect($here);
 
             if (!$config)
                 return false;
@@ -145,8 +145,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         ],
                         'format' => [
                             'type' => 'number'
-                        ]
+                        ],
+                        'index' => (int) ($start . '000')
                     ];
+                    $start++;
                     continue;
                 }
                 if ($fieldName === 'user' && $field === 'user') {
@@ -158,8 +160,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         ],
                         'format' => [
                             'type' => 'user'
-                        ]
+                        ],
+                        'index' => (int) ($start . '000')
                     ];
+                    $start++;
                     continue;
                 }
                 if (strtolower($field) === 'text') {
@@ -168,8 +172,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         'attrs' => [],
                         'format' => [
                             'type' => 'text'
-                        ]
+                        ],
+                        'index' => (int) ($start . '000')
                     ];
+                    $start++;
                     continue;
                 }
                 if (strtolower($field) === 'varchar') {
@@ -182,8 +188,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         ],
                         'format' => [
                             'type' => 'text'
-                        ]
+                        ],
+                        'index' => (int) ($start . '000')
                     ];
+                    $start++;
                     continue;
                 }
 
@@ -198,8 +206,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         ],
                         'format' => [
                             'type' => 'number'
-                        ]
+                        ],
+                        'index' => (int) ($start . '000')
                     ];
+                    $start++;
                     continue;
                 }
 
@@ -217,8 +227,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                             'type' => 'enum',
                             'enum' => $enum,
                             'vtype' => 'int'
-                        ]
+                        ],
+                        'index' => (int) ($start . '000')
                     ];
+                    $start++;
                     continue;
                 }
 
@@ -232,8 +244,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         ],
                         'format' => [
                             'type' => 'number'
-                        ]
+                        ],
+                        'index' => (int) ($start . '000')
                     ];
+                    $start++;
                     continue;
                 }
                 if (strtolower($field) === 'tinyinteger' || strtolower($field) === 'tinyint') {
@@ -246,8 +260,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         ],
                         'format' => [
                             'type' => 'number'
-                        ]
+                        ],
+                        'index' => (int) ($start . '000')
                     ];
+                    $start++;
                     continue;
                 }
                 if (strtolower($field) === 'date') {
@@ -258,8 +274,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         ],
                         'format' => [
                             'type' => 'date'
-                        ]
+                        ],
+                        'index' => (int) ($start . '000')
                     ];
+                    $start++;
                     continue;
                 }
                 if (strtolower($field) === 'datetime') {
@@ -270,8 +288,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         ],
                         'format' => [
                             'type' => 'date'
-                        ]
+                        ],
+                        'index' => (int) ($start . '000')
                     ];
+                    $start++;
                     continue;
                 }
                 if (strtolower($field) === 'created') {
@@ -282,8 +302,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         ],
                         'format' => [
                             'type' => 'date'
-                        ]
+                        ],
+                        'index' => (int) ($start . '000')
                     ];
+                    $start++;
                     continue;
                 }
                 if (strtolower($field) === 'updated') {
@@ -295,12 +317,13 @@ class ModuleBuilder extends \CliModule\Library\Builder
                         ],
                         'format' => [
                             'type' => 'date'
-                        ]
+                        ],
+                        'index' => (int) ($start . '000')
                     ];
+                    $start++;
                     continue;
                 }
             }
-
             if (is_array($field)) {
                 if(!isset($field['index'])) {
                     $field['index'] = (int) ($start . '000');
@@ -342,6 +365,11 @@ class ModuleBuilder extends \CliModule\Library\Builder
     }
     static function buildController($moduleDir, $config, $moduleName = null)
     {
+        if (isset($config['regenerate']) && $config['regenerate'] === true) {
+            if (is_dir($moduleDir)) {
+                Fs::rmdir($moduleDir);
+            }
+        }
         $config['extends'] = '\Api\Controller';
 
         if (!isset($config['auths'])) {
@@ -404,10 +432,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     $method['sorts'] = explode(',', $method['sorts']);
                 }
                 if ($name === 'create') {
-                    $method['form'] = sprintf('api.%s.create', $moduleName);
+                    $method['form'] = sprintf('api.%s.create', str_replace('api-', '', $moduleName ));
                 }
                 if ($name === 'update') {
-                    $method['form'] = sprintf('api.%s.update', $moduleName);
+                    $method['form'] = sprintf('api.%s.update', str_replace('api-', '', $moduleName ));
                 }
                 if ($name === 'delete') {
                     if (is_int($method)) {
