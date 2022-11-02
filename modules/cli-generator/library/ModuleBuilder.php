@@ -93,7 +93,9 @@ class ModuleBuilder extends \CliModule\Library\Builder
             }
         } else {
             // api
-            self::buildController($here, $obj, $config);
+            foreach($obj as $ctrlName=>$ctrlConfig) {
+                self::buildController($here, [ $ctrlName => $ctrlConfig ], $config);
+            }
         }
         return true;
     }
@@ -511,13 +513,14 @@ class ModuleBuilder extends \CliModule\Library\Builder
         }
         BModel::build($moduleDir, $tableName, $config);
     }
-    static function buildController($moduleDir, $data, $config = null)
+    static function buildController($moduleDir, $data, &$config = null)
     {
         $currentDirName = explode('/', $moduleDir);
         $currentDirName = to_slug(end($currentDirName));
         $cname = to_slug(current(array_keys($data)));
+        $cname = str_ends_with($cname, 'controller') ? $cname : $cname . '-controller';
         $config['name'] = to_ns($cname);
-        $data = current($data);
+        $data = current($data); 
 
         if (isset($config['regenerate']) && $config['regenerate'] === true) {
             if (is_dir($moduleDir)) {
