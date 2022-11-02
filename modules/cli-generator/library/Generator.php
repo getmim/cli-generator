@@ -15,29 +15,6 @@ use CliModule\Library\BController;
 class Generator
 {
     static $config = [
-        'config' => [
-            'path' => false,
-            'name' => 'cart-module',
-            'git' => '',
-            'license' => 'MIT',
-            'files' => [
-                'install',
-                'update',
-                'remove'
-            ],
-            'dependencies' => [
-                'required' => [
-                    [
-                        'module-name' => NULL
-                    ]
-                ],
-                'optional' => [
-                    [
-                        'optional-module-name' => NULL,
-                    ]
-                ],
-            ],
-        ],
         'model' => [
             'id' => 'int',
             'user' => NULL, // accepted params [ 'user,bigint' => 'user,fieldtype' ]
@@ -276,32 +253,37 @@ class Generator
         $currentDirName = explode('/', $dir);
         $currentDirName = to_slug(end($currentDirName));
         $cname = str_replace('-', '_', $currentDirName);
-        
+
         if ($output === 'controller') {
             $emit = self::$config['controller'];
-        }
-        if ($output === 'app') {
+        } elseif ($output === 'app') {
             $emit = self::$config['controller'];
+        } else {
+            $emit = [
+                $cname => $emit,
+                'lib_enum' => [
+                    'gallery.status' => [
+                        'Disabled',
+                        'Active'
+                    ]
+                ]
+            ];
         }
-        $emit = [
-            $cname => $emit
-        ];
         Fs::write($dir . sprintf('/%s.yaml', $output), \yaml_emit($emit));
     }
 
     static function generate($dir, $inputFile)
     {
-        if(!is_file($dir . '/'. $inputFile)) {
+        if (!is_file($dir . '/' . $inputFile)) {
             Bash::error('File not found, please specify name!');
         }
-        $yaml = file_get_contents($dir . '/'. $inputFile) ?? '';
+        $yaml = file_get_contents($dir . '/' . $inputFile) ?? '';
         $yaml = \yaml_parse($yaml);
 
-        if( isset( $yaml['host'] ) ) {
+        if (isset($yaml['host'])) {
             self::buildApp($dir, $yaml);
             Bash::echo('Generator executed successfully');
-        }
-        else {
+        } else {
             ModuleBuilder::buildExtend($dir, $yaml);
             Bash::echo('Generator executed successfully');
         }

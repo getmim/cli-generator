@@ -10,9 +10,8 @@ namespace CliGenerator\Library;
 
 use Mim\Library\Fs;
 use Cli\Library\Bash;
-use CliModule\Library\BController;
 use CliModule\Library\BModel;
-use CliModule\Library\ConfigCollector;
+use CliModule\Library\BController;
 
 class ModuleBuilder extends \CliModule\Library\Builder
 
@@ -28,8 +27,9 @@ class ModuleBuilder extends \CliModule\Library\Builder
                 $author = $include['author'];
             }
         }
+        $name = explode('/', $here);
+        $name = end($name);
 
-        $name = to_slug(current(array_keys($obj)));
         $createModuleDir = sprintf('modules/%s', $name);
         $config = [
             '__name' => $name,
@@ -59,6 +59,14 @@ class ModuleBuilder extends \CliModule\Library\Builder
             if (!$config) {
                 return false;
             }
+            // check if lib_enum exists
+            if( isset($obj['lib_enum']) ) {
+                $config['libEnum']['enums'] = $obj['lib_enum'];
+                unset($obj['lib_enum']);
+                $config['__dependencies']['required'][] = [
+                    'lib-enum' => NULL
+                ];
+            }
 
             $mod_name = $config['__name'];
             $mod_dir  = $here . '/modules/' . $mod_name;
@@ -80,7 +88,9 @@ class ModuleBuilder extends \CliModule\Library\Builder
         unset($first);
         if (!$isApi) {
             // object
-            self::buildModel($here, $obj, $config);
+            foreach($obj as $tableName=>$modelConfig) {
+                self::buildModel($here, [ $tableName => $modelConfig ], $config);
+            }
         } else {
             // api
             self::buildController($here, $obj, $config);
@@ -88,11 +98,11 @@ class ModuleBuilder extends \CliModule\Library\Builder
         return true;
     }
 
-    static function buildModel($moduleDir, $data, $config = null)
+    static function buildModel($moduleDir, $data, &$config = null)
     {
         $currentDirName = explode('/', $moduleDir);
         $currentDirName = to_slug(end($currentDirName));
-        $tableName = to_slug(current(array_keys($data)));
+        $tableName = current(array_keys($data));
         $config['properties'] = [
             [
                 'name' => 'table',
@@ -110,6 +120,9 @@ class ModuleBuilder extends \CliModule\Library\Builder
                 'value' => []
             ]
         ];
+        $config['__dependencies']['required'][] = [
+            'lib-formatter' => NULL
+        ];
         if (!isset($config['extends'])) {
             $config['extends'] = '\\Mim\\Model';
         }
@@ -120,7 +133,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
             $config['implements'] = [];
         }
         if (!isset($config['ns'])) {
-            $config['ns'] = to_ns(current(array_keys($data))) . '\\Model';
+            $config['ns'] = to_ns($currentDirName) . '\\Model';
         }
 
         $start = 1;
@@ -181,6 +194,9 @@ class ModuleBuilder extends \CliModule\Library\Builder
                             'type' => 'user'
                         ],
                         'index' => (int) ($start . '000')
+                    ];
+                    $config['__dependencies']['required'][] = [
+                        'lib-user' => NULL
                     ];
                     $start++;
                     continue;
