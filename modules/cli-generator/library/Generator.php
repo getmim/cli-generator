@@ -255,7 +255,9 @@ class Generator
         $cname = str_replace('-', '_', $currentDirName);
 
         if ($output === 'controller') {
-            $emit = self::$config['controller'];
+            $emit = [
+                $cname => self::$config['controller']
+            ];
         } elseif ($output === 'app') {
             $emit = self::$config['controller'];
         } else {

@@ -212,6 +212,9 @@ class ModuleBuilder extends \CliModule\Library\Builder
 
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
+                    } else {
+                        $attrs['null'] = false;
+                        $attrs['default'] = null;
                     }
 
                     if (count($params) === 2) {
@@ -242,17 +245,20 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
                     }
+                    else {
+                        $attrs['null'] = false;
+                        $attrs['default'] = null;
+                    }
 
                     if (isset($params[0])) {
                         $len = $params[0];
                     }
 
-                    if (in_array('nullable', $params)) {
-                        $attrs['null'] = true;
-                    }
-
                     if (in_array('unique', $params)) {
                         $attrs['unique'] = true;
+                    }
+                    else {
+                        $attrs['unique'] = false;
                     }
 
                     if (in_array('unsigned', $params)) {
@@ -289,6 +295,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
                     }
+                    else {
+                        $attrs['null'] = false;
+                        $attrs['default'] = null;
+                    }
 
                     if (in_array('unsigned', $params)) {
                         $attrs['unsigned'] = true;
@@ -296,6 +306,9 @@ class ModuleBuilder extends \CliModule\Library\Builder
 
                     if (in_array('unique', $params)) {
                         $attrs['unique'] = true;
+                    }
+                    else {
+                        $attrs['unique'] = false;
                     }
 
                     if (count($params) === 4) {
@@ -327,6 +340,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
                     }
+                    else {
+                        $attrs['null'] = false;
+                        $attrs['default'] = null;
+                    }
 
                     if (in_array('unsigned', $params)) {
                         $attrs['unsigned'] = true;
@@ -334,6 +351,9 @@ class ModuleBuilder extends \CliModule\Library\Builder
 
                     if (in_array('unique', $params)) {
                         $attrs['unique'] = true;
+                    }
+                    else {
+                        $attrs['unique'] = false;
                     }
 
                     if (count($params) === 4) {
@@ -370,9 +390,16 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
                     }
+                    else {
+                        $attrs['null'] = false;
+                        $attrs['default'] = null;
+                    }
 
                     if (in_array('unique', $params)) {
                         $attrs['unique'] = true;
+                    }
+                    else {
+                        $attrs['unique'] = false;
                     }
 
                     if (count($params) === 4) {
@@ -404,6 +431,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
                     }
+                    else {
+                        $attrs['null'] = false;
+                        $attrs['default'] = null;
+                    }
 
                     if (count($params) === 2) {
                         $attrs['default'] = trim(end($params));
@@ -432,6 +463,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
 
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
+                    }
+                    else {
+                        $attrs['null'] = false;
+                        $attrs['default'] = null;
                     }
 
                     if (count($params) === 2) {
