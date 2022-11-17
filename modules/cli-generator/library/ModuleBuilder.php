@@ -21,9 +21,9 @@ class ModuleBuilder extends \CliModule\Library\Builder
         Fs::mkdir($here);
         $author = ['name' => '', 'email' => '-', 'website' => '-'];
 
-        if(is_file(BASEPATH . '/etc/cache/module-init.php')) {
+        if (is_file(BASEPATH . '/etc/cache/module-init.php')) {
             $include = require BASEPATH . '/etc/cache/module-init.php';
-            if(isset($include['author'])) {
+            if (isset($include['author'])) {
                 $author = $include['author'];
             }
         }
@@ -59,8 +59,41 @@ class ModuleBuilder extends \CliModule\Library\Builder
             if (!$config) {
                 return false;
             }
+
+            $first = current($obj);
+            $isApi = isset($first['gate']);
+            if ($isApi) {
+                foreach ($obj as $key => &$object) {
+                    if (isset($object['methods']) && is_array($object['methods'])) {
+                        $cname = to_slug($key);
+                        $cname = str_ends_with($cname, 'controller') ? $cname : $cname . '-controller';
+                        foreach ($object['methods'] as $name => &$method) {
+                            if ($name === 'create') {
+                                $formName = sprintf('api.%s.create', str_replace('api-', '', $cname));
+                                if (!isset($config['libForm'])) {
+                                    $config['libForm'] = [];
+                                }
+                                if (!isset($config['libForm']['forms'])) {
+                                    $config['libForm']['forms'] = [];
+                                }
+                                if (!isset($config['libForm']['forms'][$formName])) {
+                                    $config['libForm']['forms'][$formName] = [];
+                                }
+                                foreach ($method['form'] as $key => &$inputForm) {
+                                    $inputForm = [
+                                        'rules' => $inputForm
+                                    ];
+                                }
+                                $config['libForm']['forms'][$formName] = $method['form'];
+                                $method['form'] = $formName;
+                            }
+                        }
+                    }
+                }
+            }
+
             // check if lib_enum exists
-            if( isset($obj['lib_enum']) ) {
+            if (isset($obj['lib_enum'])) {
                 $config['libEnum']['enums'] = $obj['lib_enum'];
                 unset($obj['lib_enum']);
                 $config['__dependencies']['required'][] = [
@@ -83,18 +116,17 @@ class ModuleBuilder extends \CliModule\Library\Builder
             // now, create readme file
             self::readme($here, $config['__name'], $config['__git']);
         }
-        $first = current($obj);
-        $isApi = isset($first['gate']);
+
         unset($first);
         if (!$isApi) {
             // object
-            foreach($obj as $tableName=>$modelConfig) {
-                self::buildModel($here, [ $tableName => $modelConfig ], $config);
+            foreach ($obj as $tableName => $modelConfig) {
+                self::buildModel($here, [$tableName => $modelConfig], $config);
             }
         } else {
             // api
-            foreach($obj as $ctrlName=>$ctrlConfig) {
-                self::buildController($here, [ $ctrlName => $ctrlConfig ], $config);
+            foreach ($obj as $ctrlName => $ctrlConfig) {
+                self::buildController($here, [$ctrlName => $ctrlConfig], $config);
             }
         }
         return true;
@@ -124,6 +156,12 @@ class ModuleBuilder extends \CliModule\Library\Builder
         ];
         $config['__dependencies']['required'][] = [
             'lib-formatter' => NULL
+        ];
+        $config['__dependencies']['required'][] = [
+            'api' => NULL
+        ];
+        $config['__dependencies']['required'][] = [
+            'lib-form' => NULL
         ];
         if (!isset($config['extends'])) {
             $config['extends'] = '\\Mim\\Model';
@@ -240,13 +278,13 @@ class ModuleBuilder extends \CliModule\Library\Builder
 
                     $params = explode(';', $field);
                     array_shift($params);
+                    $len  = '11,2';
                     $attrs = [];
 
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
                         $attrs['default'] = null;
-                    }
-                    else {
+                    } else {
                         $attrs['null'] = false;
                     }
 
@@ -256,8 +294,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
 
                     if (in_array('unique', $params)) {
                         $attrs['unique'] = true;
-                    }
-                    else {
+                    } else {
                         $attrs['unique'] = false;
                     }
 
@@ -295,8 +332,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
                         $attrs['default'] = null;
-                    }
-                    else {
+                    } else {
                         $attrs['null'] = false;
                     }
 
@@ -306,8 +342,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
 
                     if (in_array('unique', $params)) {
                         $attrs['unique'] = true;
-                    }
-                    else {
+                    } else {
                         $attrs['unique'] = false;
                     }
 
@@ -340,8 +375,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
                         $attrs['default'] = null;
-                    }
-                    else {
+                    } else {
                         $attrs['null'] = false;
                     }
 
@@ -351,8 +385,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
 
                     if (in_array('unique', $params)) {
                         $attrs['unique'] = true;
-                    }
-                    else {
+                    } else {
                         $attrs['unique'] = false;
                     }
 
@@ -390,15 +423,13 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
                         $attrs['default'] = null;
-                    }
-                    else {
+                    } else {
                         $attrs['null'] = false;
                     }
 
                     if (in_array('unique', $params)) {
                         $attrs['unique'] = true;
-                    }
-                    else {
+                    } else {
                         $attrs['unique'] = false;
                     }
 
@@ -411,7 +442,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
 
                     $config['fields'][$fieldName] = [
                         'type' => 'TEXT',
-                        'length' => $len,
+                        'length' => (int) $len,
                         'attrs' => $attrs,
                         'format' => [
                             'type' => 'text'
@@ -431,8 +462,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
                         $attrs['default'] = null;
-                    }
-                    else {
+                    } else {
                         $attrs['null'] = false;
                     }
 
@@ -464,8 +494,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
                     if (in_array('nullable', $params)) {
                         $attrs['null'] = true;
                         $attrs['default'] = null;
-                    }
-                    else {
+                    } else {
                         $attrs['null'] = false;
                     }
 
@@ -520,18 +549,6 @@ class ModuleBuilder extends \CliModule\Library\Builder
                 $start++;
             }
         }
-        if (!isset($config['fields']['created'])) {
-            $config['fields']['created'] = [
-                'type' => 'TIMESTAMP',
-                'attrs' => [
-                    'default' => 'CURRENT_TIMESTAMP'
-                ],
-                'format' => [
-                    'type' => 'date'
-                ],
-                'index' => (int) ($start . '000')
-            ];
-        }
         if (!isset($config['fields']['updated'])) {
             $start++;
             $config['fields']['updated'] = [
@@ -539,6 +556,18 @@ class ModuleBuilder extends \CliModule\Library\Builder
                 'attrs' => [
                     'default' => 'CURRENT_TIMESTAMP',
                     'update' => 'CURRENT_TIMESTAMP'
+                ],
+                'format' => [
+                    'type' => 'date'
+                ],
+                'index' => (int) ($start . '000')
+            ];
+        }
+        if (!isset($config['fields']['created'])) {
+            $config['fields']['created'] = [
+                'type' => 'TIMESTAMP',
+                'attrs' => [
+                    'default' => 'CURRENT_TIMESTAMP'
                 ],
                 'format' => [
                     'type' => 'date'
@@ -555,7 +584,7 @@ class ModuleBuilder extends \CliModule\Library\Builder
         $cname = to_slug(current(array_keys($data)));
         $cname = str_ends_with($cname, 'controller') ? $cname : $cname . '-controller';
         $config['name'] = to_ns($cname);
-        $data = current($data); 
+        $data = current($data);
 
         if (isset($config['regenerate']) && $config['regenerate'] === true) {
             if (is_dir($moduleDir)) {
@@ -643,9 +672,10 @@ class ModuleBuilder extends \CliModule\Library\Builder
                 $config['methods'][$name] = $method;
             }
         }
-        // dd($config, $data);
         $config['route'] = $data['route'];
         $config['model'] = $data['model'];
+        $config['format'] = $data['format'];
+        $config['Doc.Path'] = $data['Doc.Path'];
         BController::build($moduleDir, $cname, $config);
     }
 }

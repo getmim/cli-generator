@@ -10,7 +10,6 @@ namespace CliGenerator\Library;
 
 use Cli\Library\Bash;
 use Mim\Library\Fs;
-use CliModule\Library\BController;
 
 class Generator
 {
@@ -55,10 +54,7 @@ class Generator
                     "filters" => [
                         "status" => "1",
                         "services" => [
-                            "user" => [
-                                "property" => "id",
-                                "column" => "user"
-                            ],
+                            "user"
                         ]
                     ]
                 ],
@@ -68,35 +64,20 @@ class Generator
                     "filters" => [
                         "status" => "1",
                         "parents" => [
-                            "store" => [
-                                "property" => "id",
-                                "column" => "store"
-                            ],
-                            "product" => [
-                                "property" => "id",
-                                "column" => "product"
-                            ]
+                            "store",
+                            "product"
                         ]
                     ],
-                    "setget" => [
-                        "property" => "id",
-                        "column" => "details"
-                    ]
+                    "setget" => true
                 ]
             ],
             "filters" => [
                 "status" => "1",
                 "services" => [
-                    "user" => [
-                        "property" => "id",
-                        "column" => "user"
-                    ]
+                    "user" 
                 ],
                 "parents" => [
-                    "details" => [
-                        "property" => "id",
-                        "column" => "details"
-                    ]
+                    "details" 
                 ]
             ],
             "methods" => [
@@ -113,7 +94,11 @@ class Generator
                 ],
                 "single" => [],
                 "create" => [
-                    "form" => "api.details-options.create",
+                    "form" => [
+                        'name' => [
+                            'required' => true
+                        ]
+                    ],
                     "columns" => [
                         "services" => [
                             "user" => [
@@ -124,7 +109,11 @@ class Generator
                     ]
                 ],
                 "update" => [
-                    "form" => "api.details-options.update"
+                    "form" => [
+                        'name' => [
+                            'empty' => false
+                        ]
+                    ]
                 ],
                 "delete" => [
                     "status" => "0"
